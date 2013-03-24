@@ -1,0 +1,4 @@
+Options +ExecCGI
+AddHandler wsgi-script .wsgi
+
+#WSGIScriptAlias /myapp /usr/local/www/wsgi-scripts/myapp.wsgi
