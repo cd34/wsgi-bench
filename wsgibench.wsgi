@@ -1,80 +1,79 @@
-#!/usr/bin/python
+#!/usr/bin/env python3
 
-import time
+import argparse
 import random
 import sys
+import time
 
-tests = ('cpubound', 'bigresponse', 'bigfile', 'slow', 'wedge', 'segfault',
-         'leakmemory', 'largeupload', 'slowupload', 'slowdownload')
+TESTS = (
+    "cpubound",
+    "bigresponse",
+    "bigfile",
+    "slow",
+    "wedge",
+    "segfault",
+    "leakmemory",
+    "largeupload",
+    "slowupload",
+    "slowdownload",
+)
+
 
 def application(environ, start_response):
-    path = environ['PATH_INFO']
-    if (path.find('random') >= 0) and (random.randint(1,100) == 1):
-        path = '/wedge'
+    path = environ["PATH_INFO"]
+    if "random" in path and random.randint(1, 100) == 1:
+        path = "/wedge"
 
-    status = '200 OK'
-    output = 'Didn\'t match any existing test: ' + path
+    status = "200 OK"
+    output = "Didn't match any existing test: " + path
 
-    if path.startswith('/cpubound'):
-        output = 'cpu bound test executed'
-        for i in xrange(10000000): 
+    if path.startswith("/cpubound"):
+        output = "cpu bound test executed"
+        for _ in range(10_000_000):
             pass
-
-    if path.startswith('/bigresponse'):
-        output = 'bigresponse test executed ' + "x"*100000
-
-    if path.startswith('/bigfile'):
-        output = 'bigfile test executed ' + "x"*100000
-
-    if path.startswith('/slow'):
-        output = 'slow test executed'
+    elif path.startswith("/bigresponse"):
+        output = "bigresponse test executed " + "x" * 100_000
+    elif path.startswith("/bigfile"):
+        output = "bigfile test executed " + "x" * 100_000
+    elif path.startswith("/slow"):
+        output = "slow test executed"
         time.sleep(1)
-
-    if path.startswith('/wedge'):
-        output = 'wedge executed'
-        while 1:
+    elif path.startswith("/wedge"):
+        output = "wedge executed"
+        while True:
             pass
+    elif path.startswith("/segfault"):
+        output = "segfault executed"
+    elif path.startswith("/leakmemory"):
+        output = "leak memory executed"
+    elif path.startswith("/largeupload"):
+        output = "large upload executed"
+    elif path.startswith("/slowupload"):
+        output = "slow upload executed"
+    elif path.startswith("/slowdownload"):
+        output = "slow download executed"
 
-    if path.startswith('/segfault'):
-        output = 'segfault executed'
-
-    if path.startswith('/leakmemory'):
-        output = 'leak memory executed'
-
-    if path.startswith('/largeupload'):
-        output = 'large upload executed'
-
-    if path.startswith('/slowupload'):
-        output = 'slow upload executed'
-
-    if path.startswith('/slowdownload'):
-        output = 'slow download executed'
-
-    response_headers = [('Content-type', 'text/plain'),
-                        ('Content-Length', str(len(output)))]
+    output_bytes = output.encode("utf-8")
+    response_headers = [
+        ("Content-Type", "text/plain; charset=utf-8"),
+        ("Content-Length", str(len(output_bytes))),
+    ]
     start_response(status, response_headers)
+    return [output_bytes]
 
-    return [output]
 
-if __name__ == '__main__' :
-    if (len(sys.argv) < 2) or (len(sys.argv) > 3):
-        print """
-http://code.google.com/p/wsgi-bench/
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(
+        description="Generate benchmark URLs for WSGI server testing."
+    )
+    parser.add_argument("url", help="Base URL to prepend to the tests")
+    parser.add_argument(
+        "--random",
+        action="store_true",
+        help="Append /random to each test URL",
+    )
+    args = parser.parse_args()
 
-Argv1 = url to prepend to the tests
-Argv2 = random  (add random to the urls)
-
-Usage:
-              """
-        print sys.argv[0] + ' http://mysite.com/'
-        print 'or'
-        print sys.argv[0] + ' http://mysite.com/ random'
-
-    else:
-
-        random = ''
-        if len(sys.argv) == 3:
-             random = '/random'
-
-        for test in tests:
-            print sys.argv[1] + test + random
+    suffix = "/random" if args.random else ""
+    for test in TESTS:
+        print(args.url + test + suffix)
